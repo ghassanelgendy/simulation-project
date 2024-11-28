@@ -227,5 +227,60 @@ plot_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
 results_text = scrolledtext.ScrolledText(root, width=100, height=30)
 results_text.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
+
+
+# Add a global variable to store results of all runs
+all_runs_data = []
+
+# Function to run multiple simulations
+def run_multiple_simulations():
+    global all_runs_data
+    all_runs_data = []  # Reset for new set of runs
+    num_runs = int(num_runs_entry.get())
+
+    # Run simulation multiple times
+    for run in range(1, num_runs + 1):
+        run_simulation()
+        # Save the results of the current run
+        all_runs_data.append(data.copy())
+        with open(f"Run_{run}_Results.txt", "w") as file:
+            file.write(data.to_string())
+    
+    # Calculate and display the averages
+    calculate_average_across_runs(num_runs)
+
+# Function to calculate averages across all runs
+def calculate_average_across_runs(num_runs):
+    global all_runs_data
+    concatenated_data = pd.concat(all_runs_data, ignore_index=True)
+
+    # Average Service Time per Category
+    avg_service_time = concatenated_data.groupby("Category")["Service Time"].mean().round(2)
+    # Average Waiting Time per Pump
+    avg_waiting_time_per_pump = concatenated_data.groupby("Pump")["Waiting Time"].mean().round(2)
+    # Overall Average Waiting Time
+    overall_avg_waiting_time = concatenated_data["Waiting Time"].mean().round(2)
+
+    # Display averages
+    results_text.delete(1.0, tk.END)
+    results_text.insert(tk.END, "Averages Across All Runs:\n")
+    results_text.insert(tk.END, "1. Average Service Time per Category:\n")
+    for category, avg_time in avg_service_time.items():
+        results_text.insert(tk.END, f"   {category}: {avg_time}\n")
+    results_text.insert(tk.END, "\n2. Average Waiting Time per Pump:\n")
+    for pump, avg_time in avg_waiting_time_per_pump.items():
+        results_text.insert(tk.END, f"   {pump}: {avg_time}\n")
+    results_text.insert(tk.END, f"   Overall Average Waiting Time: {overall_avg_waiting_time}\n")
+    results_text.insert(tk.END, f"\nResults of all runs have been saved as Run_<RunNumber>_Results.txt files.")
+
+# Update the GUI to include the "Number of Runs" field and a new button
+tk.Label(root, text="Number of Runs:").grid(row=0, column=2, padx=10, pady=10)
+num_runs_entry = tk.Entry(root)
+num_runs_entry.grid(row=0, column=3, padx=10, pady=10)
+
+# Create a button to start multiple simulations
+multi_run_button = tk.Button(root, text="Run Multiple Simulations", command=run_multiple_simulations)
+multi_run_button.grid(row=1, column=2, columnspan=2, padx=10, pady=10)
+
 # Run the main loop
 root.mainloop()
