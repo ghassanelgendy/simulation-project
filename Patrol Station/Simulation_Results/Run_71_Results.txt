@@ -1,0 +1,13 @@
+    Car Category  Arrival Time  Service Time  Service Begins  Service Ends  Waiting Time Pump
+0     1        C             0             5               0             5             0  Gas
+1     2        C             3             7               5            12             2  Gas
+2     3        C             4             7              12            19             8  Gas
+3     4        B             7             2               7             9             0   90
+4     5        C            10             7              19            26             9  Gas
+5     6        B            12             1              12            13             0   90
+6     7        A            13             2              13            15             0   95
+7     8        B            14             3              14            17             0   90
+8     9        A            16             3              16            19             0   95
+9    10        B            16             2              17            19             1   90
+10   11        B            16             1              19            20             3   90
+11   12        A            19             3              19            22             0   95

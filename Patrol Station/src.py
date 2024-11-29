@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import random
 import matplotlib.pyplot as plt
-
+import os
 
 # Set Pandas display options to show all columns and rows without truncation
 pd.set_option('display.max_columns', None)  # Show all columns
@@ -126,7 +126,7 @@ def run_simulation():
 
     idle_time_ratios = {}
     for pump in pump_idle_times:
-        idle_time_ratios[pump] = round(pump_idle_times[pump] / service_ends[-1], 2)
+        idle_time_ratios[pump] = round(pump_idle_times[pump] / service_ends[-1], 5)
 
     max_queue_lengths = max_queue_length
 
@@ -228,6 +228,33 @@ results_text = scrolledtext.ScrolledText(root, width=100, height=30)
 results_text.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
 
+def plot_averages(num_runs):
+    global all_runs_data
+    concatenated_data = pd.concat(all_runs_data, ignore_index=True)
+
+    # Compute averages and standard deviations
+    avg_service_time = concatenated_data.groupby("Category")["Service Time"].mean().round(2)
+    std_service_time = concatenated_data.groupby("Category")["Service Time"].std().round(2)
+    avg_waiting_time = concatenated_data.groupby("Pump")["Waiting Time"].mean().round(2)
+    std_waiting_time = concatenated_data.groupby("Pump")["Waiting Time"].std().round(2)
+
+    # Create bar charts for service times and waiting times
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+    # Average Service Time Plot
+    axes[0].bar(avg_service_time.index, avg_service_time, yerr=std_service_time, capsize=5, color='skyblue', edgecolor='blue')
+    axes[0].set_title("Average Service Time per Category")
+    axes[0].set_xlabel("Car Category")
+    axes[0].set_ylabel("Average Service Time (minutes)")
+
+    # Average Waiting Time Plot
+    axes[1].bar(avg_waiting_time.index, avg_waiting_time, yerr=std_waiting_time, capsize=5, color='lightcoral', edgecolor='red')
+    axes[1].set_title("Average Waiting Time per Pump")
+    axes[1].set_xlabel("Pump Type")
+    axes[1].set_ylabel("Average Waiting Time (minutes)")
+
+    plt.tight_layout()
+    plt.show()
 
 # Add a global variable to store results of all runs
 all_runs_data = []
@@ -243,12 +270,13 @@ def run_multiple_simulations():
         run_simulation()
         # Save the results of the current run
         all_runs_data.append(data.copy())
-        with open(f"Run_{run}_Results.txt", "w") as file:
-            file.write(data.to_string())
+        if not os.path.exists("Simulation_Results"):
+            os.makedirs("Simulation_Results")
+        with open(f"Simulation_Results/Run_{run}_Results.txt", "w") as file:
+            file.write(data.to_string())       
     
     # Calculate and display the averages
     calculate_average_across_runs(num_runs)
-
 # Function to calculate averages across all runs
 def calculate_average_across_runs(num_runs):
     global all_runs_data
@@ -277,7 +305,8 @@ def calculate_average_across_runs(num_runs):
 tk.Label(root, text="Number of Runs:").grid(row=0, column=2, padx=10, pady=10)
 num_runs_entry = tk.Entry(root)
 num_runs_entry.grid(row=0, column=3, padx=10, pady=10)
-
+visualize_button = tk.Button(root, text="Visualize Averages", command=lambda: plot_averages(int(num_runs_entry.get())))
+visualize_button.grid(row=2, column=2, columnspan=2, padx=10, pady=10)
 # Create a button to start multiple simulations
 multi_run_button = tk.Button(root, text="Run Multiple Simulations", command=run_multiple_simulations)
 multi_run_button.grid(row=1, column=2, columnspan=2, padx=10, pady=10)
