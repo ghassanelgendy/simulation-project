@@ -6,13 +6,13 @@ import random
 import matplotlib.pyplot as plt
 import os
 
-# Set Pandas display options to show all columns and rows without truncation
-pd.set_option('display.max_columns', None)  # Show all columns
-pd.set_option('display.max_rows', None)  # Show all rows
-pd.set_option('display.width', None)  # Do not truncate columns by width
-pd.set_option('display.max_colwidth', None)  # Show the full content of each column
+# to display everything in the dataframe
+pd.set_option('display.max_columns', None)  
+pd.set_option('display.max_rows', None)  
+pd.set_option('display.width', None)  # don't wrap the lines
+pd.set_option('display.max_colwidth', None)  # Show tfull colun
 
-# Function to generate car category based on probabilities
+# uses given probabilites to generate a category
 def generate_car_category():
     rand = random.random()
     if rand <= 0.2:
@@ -22,17 +22,17 @@ def generate_car_category():
     else:
         return "C"
 
-# Function for service time based on car category
+#  service time based on car category
 def service_time(category):
     rand = random.random()
-    if category in ["A", "B"]:  # Table 2
+    if category in ["A", "B"]: 
         if rand <= 0.2:
             return 1
         elif rand <= 0.5:
             return 2
         else:
             return 3
-    elif category == "C":  # Table 3
+    elif category == "C": 
         if rand <= 0.2:
             return 3
         elif rand <= 0.7:
@@ -40,7 +40,7 @@ def service_time(category):
         else:
             return 7
 
-# Function for inter-arrival time
+#inter-arrival time
 def inter_arrival_time():
     rand = random.random()
     if rand <= 0.17:
@@ -52,11 +52,11 @@ def inter_arrival_time():
     else:
         return 3
 
-# Function to run the simulation
+
 def run_simulation():
-    global data
+    global data 
     n_cars = int(num_cars_entry.get())
-    pump_queues = {"95": [], "90": [], "Gas": []}
+    pump_queues = {"95": [], "90": [], "Gas": []} # list to store the queue of each pump
     pump_idle_times = {"95": 0, "90": 0, "Gas": 0}
     max_queue_length = {"95": 0, "90": 0, "Gas": 0}
 
@@ -65,12 +65,12 @@ def run_simulation():
     arrival_times = np.cumsum(inter_arrival_times)
     service_times = [service_time(cat) for cat in categories]
 
-    service_begins = []
+    service_begins = [] # saving everything in a list to show it in the dataframe
     service_ends = []
     waiting_times = []
     pumps = []
 
-    for i in range(n_cars):
+    for i in range(n_cars): # loop through all cars to simulate them
         category = categories[i]
         arrival = arrival_times[i]
 
@@ -87,8 +87,8 @@ def run_simulation():
             else:
                 selected_pump = "Gas"
 
-        pump_queue = pump_queues[selected_pump]
-        start_time = max(arrival, pump_queue[-1][1] if pump_queue else 0)
+        pump_queue = pump_queues[selected_pump] # get the queue of the selected pump
+        start_time = max(arrival, pump_queue[-1][1] if pump_queue else 0) 
         end_time = start_time + service_times[i]
         waiting_time = max(0, start_time - arrival)
 
@@ -135,17 +135,18 @@ def run_simulation():
         waiting_probabilities[pump] = round(len(data[data["Pump"] == pump]) / n_cars, 2)
 
     th_avg_service = {}
-    th_avg_service["A"] = round(1 * 0.2 + 2 * 0.3 + 3 * 0.5, 2)
+    th_avg_service["A"] = round(1 * 0.2 + 2 * 0.3 + 3 * 0.5, 2) # theoretical average service time for category A
     th_avg_service["B"] = round(1 * 0.2 + 2 * 0.3 + 3 * 0.5, 2)
     th_avg_service["C"] = round(3 * 0.2 + 5 * 0.5 + 7 * 0.3, 2)
-    th_avg_inter_time = round(0 * 0.17 + 1 * 0.23 + 2 * 0.25 + 3 * 0.35, 2)
+    th_avg_inter_time = round(0 * 0.17 + 1 * 0.23 + 2 * 0.25 + 3 * 0.35, 2) 
 
+    #bnshoof law zawedna extra pump waiting time hayt2asar ezay
     add_wait_times = {}
     for pump in ["95", "90", "Gas"]:
         reduced_waiting_times = []
-        for index, row in data.iterrows():
+        for index, row in data.iterrows(): #variabble index input data.itterows yzbot
             if row["Pump"] == pump:
-                reduced_waiting_times.append(max(0, row["Waiting Time"] - 1))
+                reduced_waiting_times.append(max(0, row["Waiting Time"] - 1)) 
             else:
                 reduced_waiting_times.append(row["Waiting Time"])
         add_wait_times[pump] = round(sum(reduced_waiting_times) / len(reduced_waiting_times), 2)
@@ -180,12 +181,53 @@ def run_simulation():
     for pump, avg_time in add_wait_times.items():
         results_text.insert(tk.END, f"   Adding an extra {pump} pump reduces average waiting time to {avg_time}\n")
 
-# Function to plot histograms
+#  global variable to store results of all runs
+all_runs_data = []
+
+
+def run_multiple_simulations():
+    global all_runs_data
+    all_runs_data = []  # Reset kol mara
+    num_runs = int(num_runs_entry.get())
+
+    for run in range(1, num_runs + 1):
+        run_simulation()
+        all_runs_data.append(data.copy())
+        if not os.path.exists("Simulation_Results"): #e3ml folder w ermyhom fyh
+            os.makedirs("Simulation_Results")
+        with open(f"Simulation_Results/Run_{run}_Results.txt", "w") as file:
+            file.write(data.to_string())       
+    
+    calculate_average_across_runs(num_runs)
+
+
+def calculate_average_across_runs(num_runs):
+    global all_runs_data
+    concatenated_data = pd.concat(all_runs_data, ignore_index=True)
+
+    # Average Service Time per Category
+    avg_service_time = concatenated_data.groupby("Category")["Service Time"].mean().round(2)
+    # Average Waiting Time per Pump
+    avg_waiting_time_per_pump = concatenated_data.groupby("Pump")["Waiting Time"].mean().round(2)
+    # Overall Average Waiting Time
+    overall_avg_waiting_time = concatenated_data["Waiting Time"].mean().round(2)
+
+
+    results_text.delete(1.0, tk.END)
+    results_text.insert(tk.END, "Averages Across All Runs:\n")
+    results_text.insert(tk.END, "1. Average Service Time per Category:\n")
+    for category, avg_time in avg_service_time.items():
+        results_text.insert(tk.END, f"   {category}: {avg_time}\n")
+    results_text.insert(tk.END, "\n2. Average Waiting Time per Pump:\n")
+    for pump, avg_time in avg_waiting_time_per_pump.items():
+        results_text.insert(tk.END, f"   {pump}: {avg_time}\n")
+    results_text.insert(tk.END, f"   Overall Average Waiting Time: {overall_avg_waiting_time}\n")
+    results_text.insert(tk.END, f"\nResults of all runs have been saved as Run_<RunNumber>_Results.txt files.")
+
+# plot histograms
 def plot_histograms():
     for pump in ["95", "90", "Gas"]:
-        # Filter data for the current pump
         pump_data = data[data["Pump"] == pump]
-        # Create a figure with two subplots
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4))
 
         # Service Time Histogram
@@ -202,43 +244,48 @@ def plot_histograms():
         ax2.set_ylabel("Frequency")
         ax2.grid(axis='y', linestyle='--', alpha=0.7)
 
-        # Adjust layout and show the plot
         plt.tight_layout()
         plt.show()
 
-# Create the main window
+#GUIIII
 root = tk.Tk()
 root.title("Gas Station Simulation")
+root.configure(bg="#2E2E2E") 
 
-# Create input fields
-tk.Label(root, text="Number of Cars:").grid(row=0, column=0, padx=10, pady=10)
-num_cars_entry = tk.Entry(root)
+
+tk.Label(root, text="Number of Cars:", bg="#2E2E2E", fg="#F2F2F2").grid(row=0, column=0, padx=10, pady=10)
+num_cars_entry = tk.Entry(root, bg="#4F4F4F", fg="#F2F2F2", insertbackground="#F2F2F2")
 num_cars_entry.grid(row=0, column=1, padx=10, pady=10)
 
-# Create a button to start the simulation
-start_button = tk.Button(root, text="Start Simulation", command=run_simulation)
+
+start_button = tk.Button(
+    root, text="Start Simulation", bg="#4F4F4F", fg="#F2F2F2", activebackground="#6E6E6E", activeforeground="#F2F2F2", command=run_simulation
+)
 start_button.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
-# Create a button to plot histograms
-plot_button = tk.Button(root, text="Plot Histograms", command=plot_histograms)
+
+plot_button = tk.Button(
+    root, text="Plot Histograms", bg="#4F4F4F", fg="#F2F2F2", activebackground="#6E6E6E", activeforeground="#F2F2F2", command=plot_histograms
+)
 plot_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
 
-# Create a text area to display results
-results_text = scrolledtext.ScrolledText(root, width=100, height=30)
+
+results_text = scrolledtext.ScrolledText(
+    root, bg="#2E2E2E", fg="#F2F2F2", insertbackground="#F2F2F2", width=100, height=30
+)
 results_text.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
 
-def plot_averages(num_runs):
+def plot_averages(num_runs):  #variable num_runs used later in lambda
     global all_runs_data
-    concatenated_data = pd.concat(all_runs_data, ignore_index=True)
+    concatenated_data = pd.concat(all_runs_data, ignore_index=True) #concatenate all runs to get the averages
 
-    # Compute averages and standard deviations
     avg_service_time = concatenated_data.groupby("Category")["Service Time"].mean().round(2)
-    std_service_time = concatenated_data.groupby("Category")["Service Time"].std().round(2)
+    std_service_time = concatenated_data.groupby("Category")["Service Time"].std().round(2) #standard deviation
     avg_waiting_time = concatenated_data.groupby("Pump")["Waiting Time"].mean().round(2)
     std_waiting_time = concatenated_data.groupby("Pump")["Waiting Time"].std().round(2)
 
-    # Create bar charts for service times and waiting times
+  # bar charrts
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
     # Average Service Time Plot
@@ -256,60 +303,20 @@ def plot_averages(num_runs):
     plt.tight_layout()
     plt.show()
 
-# Add a global variable to store results of all runs
-all_runs_data = []
 
-# Function to run multiple simulations
-def run_multiple_simulations():
-    global all_runs_data
-    all_runs_data = []  # Reset for new set of runs
-    num_runs = int(num_runs_entry.get())
 
-    # Run simulation multiple times
-    for run in range(1, num_runs + 1):
-        run_simulation()
-        # Save the results of the current run
-        all_runs_data.append(data.copy())
-        if not os.path.exists("Simulation_Results"):
-            os.makedirs("Simulation_Results")
-        with open(f"Simulation_Results/Run_{run}_Results.txt", "w") as file:
-            file.write(data.to_string())       
-    
-    # Calculate and display the averages
-    calculate_average_across_runs(num_runs)
-# Function to calculate averages across all runs
-def calculate_average_across_runs(num_runs):
-    global all_runs_data
-    concatenated_data = pd.concat(all_runs_data, ignore_index=True)
-
-    # Average Service Time per Category
-    avg_service_time = concatenated_data.groupby("Category")["Service Time"].mean().round(2)
-    # Average Waiting Time per Pump
-    avg_waiting_time_per_pump = concatenated_data.groupby("Pump")["Waiting Time"].mean().round(2)
-    # Overall Average Waiting Time
-    overall_avg_waiting_time = concatenated_data["Waiting Time"].mean().round(2)
-
-    # Display averages
-    results_text.delete(1.0, tk.END)
-    results_text.insert(tk.END, "Averages Across All Runs:\n")
-    results_text.insert(tk.END, "1. Average Service Time per Category:\n")
-    for category, avg_time in avg_service_time.items():
-        results_text.insert(tk.END, f"   {category}: {avg_time}\n")
-    results_text.insert(tk.END, "\n2. Average Waiting Time per Pump:\n")
-    for pump, avg_time in avg_waiting_time_per_pump.items():
-        results_text.insert(tk.END, f"   {pump}: {avg_time}\n")
-    results_text.insert(tk.END, f"   Overall Average Waiting Time: {overall_avg_waiting_time}\n")
-    results_text.insert(tk.END, f"\nResults of all runs have been saved as Run_<RunNumber>_Results.txt files.")
-
-# Update the GUI to include the "Number of Runs" field and a new button
-tk.Label(root, text="Number of Runs:").grid(row=0, column=2, padx=10, pady=10)
-num_runs_entry = tk.Entry(root)
+tk.Label(root, text="Number of Runs:", bg="#2E2E2E", fg="#F2F2F2").grid(row=0, column=2, padx=10, pady=10)
+num_runs_entry = tk.Entry(root, bg="#4F4F4F", fg="#F2F2F2", insertbackground="#F2F2F2")
 num_runs_entry.grid(row=0, column=3, padx=10, pady=10)
-visualize_button = tk.Button(root, text="Visualize Averages", command=lambda: plot_averages(int(num_runs_entry.get())))
+visualize_button = tk.Button(
+    root, text="Visualize Averages", bg="#4F4F4F", fg="#F2F2F2", activebackground="#6E6E6E", activeforeground="#F2F2F2", command=lambda: plot_averages(int(num_runs_entry.get()))
+)
 visualize_button.grid(row=2, column=2, columnspan=2, padx=10, pady=10)
-# Create a button to start multiple simulations
-multi_run_button = tk.Button(root, text="Run Multiple Simulations", command=run_multiple_simulations)
+
+multi_run_button = tk.Button(
+    root, text="Run Multiple Simulations", bg="#4F4F4F", fg="#F2F2F2", activebackground="#6E6E6E", activeforeground="#F2F2F2", command=run_multiple_simulations
+)
 multi_run_button.grid(row=1, column=2, columnspan=2, padx=10, pady=10)
 
-# Run the main loop
+
 root.mainloop()
