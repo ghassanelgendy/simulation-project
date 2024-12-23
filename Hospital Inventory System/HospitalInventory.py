@@ -3,6 +3,10 @@ from tkinter import ttk, messagebox
 import random
 import pandas as pd
 from collections import Counter
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -138,19 +142,19 @@ def runSim(days=20, max_basement_inventory=30, review_period=6):
 
 
 def optimalMaxBasement():
-    for max_basement in range(10, 40):
-        _, stats = runSim(20, max_basement, 6)
+    for max_basement in range(10, 40,5):
+        _, stats = runSim(40, max_basement, 6)
         if stats["basement_shortage"] == 0:
             return max_basement
 
 
 def find_best_value(func):
-    results = [func() for _ in range(500)]
+    results = [func() for _ in range(200)]
     return Counter(results).most_common(1)[0][0]
 
 
 def optimalReviewPeriod():
-    for reviewPeriod in range(5, 12):
+    for reviewPeriod in range(5, 15):
         _, stats = runSim(20, 30, reviewPeriod)
         if stats["basement_shortage"] != 0:
             return reviewPeriod - 1
@@ -159,9 +163,9 @@ def optimalReviewPeriod():
 def find_optimal_combination():
     optimal_combination = None
     min_basement_shortage = float('inf')
-    for max_basement in range(10, 40):
-        for review_period in range(5, 12):
-            _, stats = runSim(days=20, max_basement_inventory=max_basement, review_period=review_period)
+    for max_basement in range(20, 40,2):
+        for review_period in range(2, 11):
+            _, stats = runSim(days=100, max_basement_inventory=max_basement, review_period=review_period)
             if stats["basement_shortage"] < min_basement_shortage:
                 min_basement_shortage = stats["basement_shortage"]
                 optimal_combination = (max_basement, review_period)
@@ -173,7 +177,7 @@ def find_optimal_combination():
 class SimulationApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Simulation GUI")
+        self.root.title("Inventory Simulation")
         self.create_input_section()
         self.create_results_section()
         self.root.minsize(1300, 600)
@@ -209,6 +213,9 @@ class SimulationApp:
                                            command=self.run_multiple_simulations)
         self.run_multiple_btn.grid(row=4, column=1, padx=5, pady=5)
 
+        self.plot_histograms_btn = ttk.Button(frame, text="Display Histograms", command=self.plot_histograms)
+        self.plot_histograms_btn.grid(row=5, column=0, columnspan=2, padx=5, pady=10)
+
     def create_results_section(self):
         frame = ttk.Frame(self.root)
         frame.pack(pady=10, padx=10, fill="both", expand=True)
@@ -232,25 +239,39 @@ class SimulationApp:
         self.results_frame = ttk.Frame(scrollable_frame)
         self.results_frame.pack(fill="both", expand=True)
 
-    def display_results(self, result, stats=None):
+    def display_results(self, result=None, stats=None):
         for widget in self.results_frame.winfo_children():
             widget.destroy()
 
-        if isinstance(result, pd.DataFrame):
+        # Display table if result is provided
+        if result is not None and isinstance(result, pd.DataFrame):
             for i, column in enumerate(result.columns):
-                label = tk.Label(self.results_frame, text=column, relief="solid", padx=5, pady=5)
+                label = tk.Label(self.results_frame, text=column, relief="solid", padx=5, pady=5, bg="lightgray")
                 label.grid(row=0, column=i, sticky="nsew")
             for row_index, row in result.iterrows():
                 for col_index, value in enumerate(row):
                     label = tk.Label(self.results_frame, text=value, relief="solid", padx=5, pady=5)
                     label.grid(row=row_index + 1, column=col_index, sticky="nsew")
-        elif isinstance(result, str):
-            label = tk.Label(self.results_frame, text=result, font=("Arial", 16), padx=5, pady=5)
-            label.grid(row=0, column=0, sticky="nsew")
 
+            next_row = len(result) + 1  # Place stats below the table
+            num_columns = len(result.columns)
+        else:
+            # If no table, set the starting row and column count
+            next_row = 0
+            num_columns = 1
+
+        # Display stats in a styled frame
         if stats:
-            label = tk.Label(self.results_frame, text=stats, font=("Arial", 12), padx=5, pady=5, justify="left")
-            label.grid(row=len(self.results_frame.winfo_children()) + 1, column=0, sticky="w", padx=5, pady=5)
+            stats_frame = ttk.LabelFrame(self.results_frame, text="Simulation Statistics", padding=(10, 5))
+            stats_frame.grid(row=next_row, column=0, columnspan=num_columns, pady=10, sticky="ew")
+
+            # Add stats as labels in the frame
+            for i, line in enumerate(stats.split("\n")):
+                if line.strip():  # Skip empty lines
+                    label = tk.Label(stats_frame, text=line, anchor="w", padx=5, pady=2)
+                    label.grid(row=i, column=0, sticky="w")
+        self.canvas.yview_moveto(0)
+
 
     def run_single_simulation(self):
         try:
@@ -264,10 +285,9 @@ class SimulationApp:
             optimal_combination = find_best_value(find_optimal_combination)
 
             stats_str = (
-                f"Simulation Statistics:\n"
                 f"Average FF Inventory: {stats['avg_ff']}\n"
                 f"Average Basement Inventory: {stats['avg_basement']}\n"
-                f"Total Shortage Days: {stats['total_shortage_days']}\n"   
+                f"Total Shortage Days: {stats['total_shortage_days']}\n"
                 f"Total Basement Shortage: {stats['total_basement_shortage']}\n"
                 f"Experimental Avg Demand: {stats['experimental_avg_demand']:.2f}\n"
                 f"Experimental Avg Lead Time: {stats['experimental_avg_lead_time']:.2f}\n"
@@ -290,40 +310,84 @@ class SimulationApp:
             review_period = int(self.review_entry.get())
 
             averages = {
-                "ff_inventory": 0,
-                "basement_inventory": 0,
-                "shortage_days": 0,
-                "avg_demand": 0,
-                "avg_lead_time": 0,
-                "basement_shortage": 0,
+                "FF Inventory": 0,
+                "Basement Inventory": 0,
+                "Shortage Days": 0,
+                "Demand": 0,
+                "Lead Time": 0,
+                "Basement Shortage": 0,
             }
 
             for _ in range(runs):
                 _, stats = runSim(days, max_basement, review_period)
-                averages["ff_inventory"] += stats["avg_ff"]
-                averages["basement_inventory"] += stats["avg_basement"]
-                averages["shortage_days"] += stats["total_shortage_days"]
-                averages["avg_demand"] += stats["experimental_avg_demand"]
-                averages["avg_lead_time"] += stats["experimental_avg_lead_time"]
-                averages["basement_shortage"] += stats["basement_shortage"]
+                averages["FF Inventory"] += stats["avg_ff"]
+                averages["Basement Inventory"] += stats["avg_basement"]
+                averages["Shortage Days"] += stats["total_shortage_days"]
+                averages["Demand"] += stats["experimental_avg_demand"]
+                averages["Lead Time"] += stats["experimental_avg_lead_time"]
+                averages["Basement Shortage"] += stats["basement_shortage"]
 
             for key in averages.keys():
                 averages[key] /= runs
 
+            # Prepare a stats string
             stats_str = (
-                f"Simulation Results after {runs} runs:\n"
-                f"Avg FF Inventory: {averages['ff_inventory']:.2f}\n"
-                f"Avg Basement Inventory: {averages['basement_inventory']:.2f}\n"
-                f"Avg Shortage Days: {averages['shortage_days']:.2f}\n"
-                f"Avg Demand: {averages['avg_demand']:.2f}\n"
-                f"Avg Lead Time: {averages['avg_lead_time']:.2f}\n"
-                f"Total Basement Shortage: {averages['basement_shortage']:.2f}\n"
+                f"Results for {runs} runs:\n"
+                f"------------------------------\n"
+                f"Average FF Inventory: {averages['FF Inventory']:.2f}\n"
+                f"Average Basement Inventory: {averages['Basement Inventory']:.2f}\n"
+                f"Average Shortage Days: {averages['Shortage Days']:.2f}\n"
+                f"Average Demand: {averages['Demand']:.2f}\n"
+                f"Average Lead Time: {averages['Lead Time']:.2f}\n"
+                f"Average Basement Shortage: {averages['Basement Shortage']:.2f}\n"
             )
 
-            self.display_results(stats_str)
+            # Call display_results with only stats
+            self.display_results(None, stats_str)
         except ValueError:
             messagebox.showerror("Input Error", "Please enter valid numerical values.")
 
+    def plot_histograms(self):
+        try:
+            days = int(self.days_entry.get())
+            max_basement = int(self.basement_entry.get())
+            review_period = int(self.review_entry.get())
+
+            # Run simulation
+            simulation_df, _ = runSim(days, max_basement, review_period)
+
+            # Extract daily demand and shortages from the DataFrame
+            daily_demand = simulation_df["Rooms Occupied (Boxes Demand)"]
+            daily_shortage = simulation_df["Shortage"]
+
+            # Create a new window for displaying the histograms
+            hist_window = tk.Toplevel(self.root)
+            hist_window.title("Histograms")
+
+            # Create a Matplotlib figure
+            fig = Figure(figsize=(8, 6))
+            ax1 = fig.add_subplot(121)
+            ax2 = fig.add_subplot(122)
+
+            # Plot Demand Histogram
+            ax1.hist(daily_demand, bins=range(1, max(daily_demand) + 2), edgecolor='black', color='skyblue')
+            ax1.set_title("Daily Demand")
+            ax1.set_xlabel("Demand")
+            ax1.set_ylabel("Frequency")
+
+            # Plot Shortage Histogram
+            ax2.hist(daily_shortage, bins=range(0, max(daily_shortage) + 2), edgecolor='black', color='salmon')
+            ax2.set_title("Daily Shortages")
+            ax2.set_xlabel("Shortages")
+            ax2.set_ylabel("Frequency")
+
+            # Embed the figure in the Tkinter window
+            canvas = FigureCanvasTkAgg(fig, master=hist_window)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter valid numerical values.")
 
 
 root = tk.Tk()
