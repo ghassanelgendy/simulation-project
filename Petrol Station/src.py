@@ -58,6 +58,7 @@ def run_simulation():
     n_cars = int(num_cars_entry.get())
     pump_queues = {"95": [], "90": [], "Gas": []} # list to store the queue of each pump
     pump_idle_times = {"95": 0, "90": 0, "Gas": 0}
+    last_end_time = {"95": 0, "90": 0, "Gas": 0}
     max_queue_length = {"95": 0, "90": 0, "Gas": 0}
 
     categories = [generate_car_category() for _ in range(n_cars)]
@@ -100,8 +101,15 @@ def run_simulation():
         pump_queue.append((start_time, end_time))
         max_queue_length[selected_pump] = max(max_queue_length[selected_pump], len(pump_queue))
 
-        if len(pump_queue) == 1:
-            pump_idle_times[selected_pump] += start_time - (arrival_times[i - 1] if i > 0 else 0)
+        if start_time > last_end_time[selected_pump]:
+            pump_idle_times[selected_pump] += start_time - last_end_time[selected_pump]
+
+        last_end_time[selected_pump] = end_time
+
+    simulation_end_time = max(service_ends)
+    for pump in pump_idle_times:
+        if last_end_time[pump] < simulation_end_time:
+            pump_idle_times[pump] += simulation_end_time - last_end_time[pump]
 
     data = pd.DataFrame({
         "Car": range(1, n_cars + 1),
@@ -126,7 +134,7 @@ def run_simulation():
 
     idle_time_ratios = {}
     for pump in pump_idle_times:
-        idle_time_ratios[pump] = round(pump_idle_times[pump] / service_ends[-1], 5)
+        idle_time_ratios[pump] = pump_idle_times[pump] 
 
     max_queue_lengths = max_queue_length
 
@@ -167,7 +175,7 @@ def run_simulation():
     results_text.insert(tk.END, "\n4. Waiting Probabilities per Pump:\n")
     for pump, prob in waiting_probabilities.items():
         results_text.insert(tk.END, f"   {pump}: {prob}\n")
-    results_text.insert(tk.END, "\n5. Idle Time Ratios:\n")
+    results_text.insert(tk.END, "\n5. Idle Time :\n")
     for pump, ratio in idle_time_ratios.items():
         results_text.insert(tk.END, f"   {pump}: {ratio}\n")
     results_text.insert(tk.END, "\nPolicy Questions:\n")
