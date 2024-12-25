@@ -38,11 +38,18 @@ def get_random_value(randInt, table):
 
 
 def theoretical_averages(table):
-    return sum(value * (prob if i == 0 else prob - table[i - 1][1])
-               for i, (value, prob, _) in enumerate(table))
+    total = 0
+    for i in range(len(table)):
+        value, prob, _ = table[i]
+        if i == 0:
+            total += value * prob
+        else:
+            total += value * (prob - table[i - 1][1])
+    
+    return total
 
 
-def runSim(days=20, max_basement_inventory=30, review_period=6):
+def runSim(days= 20, max_basement_inventory= 30, review_period = 6):
     max_ff_inventory = 10
     ff_inventory = 4
     basement_inventory = max_basement_inventory
@@ -52,7 +59,7 @@ def runSim(days=20, max_basement_inventory=30, review_period=6):
     basementShortage = 0
     total_demand = 0
     total_shortage_days = 0
-    total_basement_shortage = 0
+    total_basement_shortage_days = 0
     lead_times = []
     daily_demand = []
 
@@ -84,10 +91,11 @@ def runSim(days=20, max_basement_inventory=30, review_period=6):
                 basement_inventory -= min(10, basement_inventory)
                 if demand > ff_inventory:
                     basementShortage += demand - ff_inventory
+                    total_basement_shortage_days += 1
                 ff_inventory = max(0, ff_inventory - demand)
             elif basement_inventory == 0:
                 basementShortage += demand - ff_inventory
-                total_basement_shortage += 1
+                total_basement_shortage_days += 1
                 ff_inventory = 0
 
         if days_until_review == 0:
@@ -132,7 +140,7 @@ def runSim(days=20, max_basement_inventory=30, review_period=6):
         "avg_ff": avgFF,
         "avg_basement": avgBasement,
         "total_shortage_days": total_shortage_days,
-        "total_basement_shortage": total_basement_shortage,
+        "total_basement_shortage": total_basement_shortage_days,
         "experimental_avg_demand": experimental_avg_demand,
         "experimental_avg_lead_time": experimental_avg_lead_time,
         "theoretical_avg_demand": theoretical_avg_demand,
@@ -163,8 +171,8 @@ def optimalReviewPeriod():
 def find_optimal_combination():
     optimal_combination = None
     min_basement_shortage = float('inf')
-    for max_basement in range(20, 40,2):
-        for review_period in range(2, 11):
+    for max_basement in range(20, 40, 2):
+        for review_period in range(4, 11):
             _, stats = runSim(days=100, max_basement_inventory=max_basement, review_period=review_period)
             if stats["basement_shortage"] < min_basement_shortage:
                 min_basement_shortage = stats["basement_shortage"]
@@ -288,7 +296,7 @@ class SimulationApp:
                 f"Average FF Inventory: {stats['avg_ff']}\n"
                 f"Average Basement Inventory: {stats['avg_basement']}\n"
                 f"Total Shortage Days: {stats['total_shortage_days']}\n"
-                f"Total Basement Shortage: {stats['total_basement_shortage']}\n"
+                f"Total Basement Shortage Days: {stats['total_basement_shortage']}\n"
                 f"Experimental Avg Demand: {stats['experimental_avg_demand']:.2f}\n"
                 f"Experimental Avg Lead Time: {stats['experimental_avg_lead_time']:.2f}\n"
                 f"Theoretical Avg Demand: {stats['theoretical_avg_demand']:.2f}\n"
