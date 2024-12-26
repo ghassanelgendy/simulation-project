@@ -1,4 +1,5 @@
 import tkinter as tk
+from builtins import *
 from tkinter import ttk, scrolledtext
 import numpy as np
 import pandas as pd
@@ -201,9 +202,9 @@ def run_multiple_simulations():
     for run in range(1, num_runs + 1):
         run_simulation()
         all_runs_data.append(data.copy())
-        if not os.path.exists(".\Petrol Station\Simulation_Results"): #e3ml folder w ermyhom fyh
-            os.makedirs(".\Petrol Station\Simulation_Results")
-        with open(f".\Petrol Station\Simulation_Results/Run_{run}_Results.txt", "w") as file:
+        if not os.path.exists(".\\Petrol Station\\Simulation_Results"): #e3ml folder w ermyhom fyh
+            os.makedirs(".\\Petrol Station\\Simulation_Results")
+        with open(f".\\Petrol Station\\Simulation_Results\\Run_{run}_Results.txt", "w") as file:
             file.write(data.to_string())       
     
     calculate_average_across_runs(num_runs)
