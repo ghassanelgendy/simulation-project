@@ -55,7 +55,8 @@ def inter_arrival_time():
 
 
 def run_simulation():
-    global data 
+    global data
+    current_queue_length = {"95": 0, "90": 0, "Gas": 0}
     n_cars = int(num_cars_entry.get())
     pump_queues = {"95": [], "90": [], "Gas": []} # list to store the queue of each pump
     pump_idle_times = {"95": 0, "90": 0, "Gas": 0}
@@ -89,8 +90,12 @@ def run_simulation():
             else:
                 selected_pump = "Gas"
 
-        pump_queue = pump_queues[selected_pump] # get the queue of the selected pump
-        start_time = max(arrival, pump_queue[-1][1] if pump_queue else 0) 
+        # Remove cars that have already finished service
+        pump_queue = pump_queues[selected_pump]
+        pump_queues[selected_pump] = [(s, e) for s, e in pump_queue if e > arrival]
+        current_queue_length[selected_pump] = len(pump_queues[selected_pump])  # Update current queue length
+
+        start_time = max(arrival, pump_queue[-1][1] if pump_queue else 0)
         end_time = start_time + service_times[i]
         waiting_time = max(0, start_time - arrival)
 
@@ -99,8 +104,10 @@ def run_simulation():
         waiting_times.append(waiting_time)
         pumps.append(selected_pump)
 
-        pump_queue.append((start_time, end_time))
-        max_queue_length[selected_pump] = max(max_queue_length[selected_pump], len(pump_queue))
+        pump_queues[selected_pump].append((start_time, end_time))  # Add the car to the queue
+        current_queue_length[selected_pump] += 1  # Increment the current queue length
+        max_queue_length[selected_pump] = max(max_queue_length[selected_pump],
+                                              current_queue_length[selected_pump])  # Update max queue length
 
         if start_time > last_end_time[selected_pump]:
             pump_idle_times[selected_pump] += start_time - last_end_time[selected_pump]

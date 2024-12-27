@@ -4,7 +4,6 @@ from tkinter import ttk, messagebox
 import random
 import pandas as pd
 from collections import Counter
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
