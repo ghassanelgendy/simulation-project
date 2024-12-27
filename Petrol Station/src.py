@@ -92,7 +92,7 @@ def run_simulation():
 
         # Remove cars that have already finished service
         pump_queue = pump_queues[selected_pump]
-        pump_queues[selected_pump] = [(s, e) for s, e in pump_queue if e > arrival]
+        pump_queues[selected_pump] = [(starting, ending) for starting, ending in pump_queue if ending > arrival]
         current_queue_length[selected_pump] = len(pump_queues[selected_pump])  # Update current queue length
 
         start_time = max(arrival, pump_queue[-1][1] if pump_queue else 0)
