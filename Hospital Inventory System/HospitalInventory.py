@@ -1,4 +1,5 @@
 import tkinter as tk
+from builtins import *
 from tkinter import ttk, messagebox
 import random
 import pandas as pd
