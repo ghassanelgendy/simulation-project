@@ -148,7 +148,10 @@ def run_simulation():
 
     waiting_probabilities = {}
     for pump in pump_queues:
-        waiting_probabilities[pump] = round(len(data[data["Pump"] == pump]) / n_cars, 2)
+        total_cars_at_pump = len(data[data["Pump"] == pump])
+        cars_that_waited = len(data[(data["Pump"] == pump) & (data["Waiting Time"] > 0)])
+        waiting_probabilities[pump] = round(cars_that_waited / total_cars_at_pump if total_cars_at_pump > 0 else 1, 2)
+
 
     th_avg_service = {}
     th_avg_service["A"] = round(1 * 0.2 + 2 * 0.3 + 3 * 0.5, 2) # theoretical average service time for category A
