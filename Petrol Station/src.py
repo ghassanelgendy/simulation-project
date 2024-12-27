@@ -150,7 +150,7 @@ def run_simulation():
     for pump in pump_queues:
         total_cars_at_pump = len(data[data["Pump"] == pump])
         cars_that_waited = len(data[(data["Pump"] == pump) & (data["Waiting Time"] > 0)])
-        waiting_probabilities[pump] = round(cars_that_waited / total_cars_at_pump if total_cars_at_pump > 0 else 1, 2)
+        waiting_probabilities[pump] = round(cars_that_waited / total_cars_at_pump if total_cars_at_pump > 0 else 0, 2)
 
 
     th_avg_service = {}
