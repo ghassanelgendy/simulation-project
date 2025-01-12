@@ -4,10 +4,10 @@ import os
 
 # Function to run the Multichannel Queue project
 def run_multichannel_queue():
-      subprocess.run(["python", ".\\Petrol Station\\src.py"])
+      subprocess.run(["python", ".\\petrol station\\src.py"])
 # Function to run the Inventory project
 def run_inventory():
-    subprocess.run(["python", ".\\Hospital Inventory System\\HospitalInventory.py"])
+    subprocess.run(["python", ".\\hospital inventory system\\src.py"])
 
 # Function to exit the application
 def exit_app():
@@ -25,8 +25,8 @@ title_label = tk.Label(root, text="Select a Simulation Project", font=("Arial", 
 title_label.pack(pady=5)
 
 # Load images using tkinter's PhotoImage with full path
-queue_image_path = os.path.join('./', "img.gif")
-inventory_image_path = os.path.join('./', "img1.gif")
+queue_image_path = os.path.join('./img/', "img.gif")
+inventory_image_path = os.path.join('./img/', "img1.gif")
 
 queue_photo = tk.PhotoImage(file=queue_image_path)  # Load the first image
 inventory_photo = tk.PhotoImage(file=inventory_image_path)  # Load the second image
