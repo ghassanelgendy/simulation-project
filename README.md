@@ -9,7 +9,8 @@ Welcome to the **DS331 Simulation Project**! This project features two exciting 
 
 2. **Hospital Inventory System Simulation** 🏥
    - Explore an inventory management system designed for hospitals. Simulate the tracking and restocking of medical supplies, optimize inventory levels, and prevent shortages in critical situations.
-![review](https://github.com/user-attachments/assets/93afc3e4-e6b2-43b8-9acd-bb4db9a9b475)
+![preview](https://github.com/user-attachments/assets/3751eb27-bf39-4b17-a8b3-dc21d816b256)
+
 
 ## 🔧 Project Structure
 
@@ -52,6 +53,7 @@ simpulation-project/
 ### Hospital Inventory System
 - **Objective**: Simulate the inventory system of a hospital to track supplies across different floors and prevent stockouts.
 - **Key Metrics**:
+
   - Average units in stock
   - Shortage frequency
   - Optimization of inventory review periods and lead times
